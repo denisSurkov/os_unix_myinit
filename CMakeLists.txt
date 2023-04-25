@@ -3,4 +3,4 @@ project(os_unix_myinit C)
 
 set(CMAKE_C_STANDARD 23)
 
-add_executable(os_unix_myinit src/main.c)
+add_executable(os_unix_myinit src/main.c src/sub_processes.h src/sub_processes.c src/config_reading.c src/config_reading.h)
