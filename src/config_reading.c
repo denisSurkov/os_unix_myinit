@@ -4,43 +4,60 @@
 
 #include "config_reading.h"
 #include "sub_processes.h"
-#include "string.h"
-#include "stdlib.h"
-#include "stdio.h"
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
+#define MAX_ARGUMENTS_IN_LINE 4096
+#define MAX_LINES_IN_FILE 1024
 
 struct SubProcess * processOneLine(char * line, size_t len) {
-    char * inPathName = NULL;
-    char * outPathName = NULL;
+    char * lineArguments[MAX_ARGUMENTS_IN_LINE];
+    size_t lineArgumentsFirstFreeIndex = 0;
+    size_t segmentStartIndex = 0;
+    size_t currentIndex = 0;
 
-    size_t segmentEndIndex = len;
-    size_t currentIndex = len;
+    while (currentIndex < len) {
+        if (line[currentIndex] == ' ') {
+            size_t segmentLength = currentIndex - segmentStartIndex;
 
-    currentIndex--;
-    while (line[currentIndex] != ' ') {
-        currentIndex--;
+            lineArguments[lineArgumentsFirstFreeIndex] = (char *) malloc(sizeof(char) * segmentLength);
+            strncpy(lineArguments[lineArgumentsFirstFreeIndex], &line[segmentStartIndex], segmentLength);
+
+            lineArgumentsFirstFreeIndex++;
+
+            while (currentIndex < len && line[currentIndex] == ' ') {
+                currentIndex++;
+            }
+            segmentStartIndex = currentIndex;
+            continue;
+        }
+
+        currentIndex++;
     }
 
-    outPathName = (char *) malloc(sizeof(char) * (segmentEndIndex - currentIndex));
-    strncpy(outPathName, &line[currentIndex + 1], segmentEndIndex - currentIndex);
+    size_t segmentLength = currentIndex - segmentStartIndex;
 
-    segmentEndIndex = currentIndex;
-    currentIndex--;
-    while (line[currentIndex] != ' ') {
-        currentIndex--;
-    }
+    lineArguments[lineArgumentsFirstFreeIndex] = (char *) malloc(sizeof(char) * segmentLength);
+    strncpy(lineArguments[lineArgumentsFirstFreeIndex], &line[segmentStartIndex], segmentLength);
+    lineArgumentsFirstFreeIndex++;
 
-    inPathName = (char *) malloc(sizeof(char) * (segmentEndIndex - currentIndex));
-    strncpy(inPathName, &line[currentIndex + 1], segmentEndIndex - currentIndex);
 
-    fprintf(stdout, "%s %lu\n", inPathName, strlen(inPathName));
-    fprintf(stdout, "%s %lu\n", outPathName, strlen(outPathName));
+    struct SubProcess * subProcess =  malloc(sizeof(struct SubProcess));
+    subProcess->pid = -1;
+    subProcess->paramsLength = lineArgumentsFirstFreeIndex;
+    subProcess->configLineParams = lineArguments;
+
+    return subProcess;
 };
 
-struct SubProcess * readConfig(char * configPathName) {
+struct SubProcess ** readConfig(char * configPathName, size_t * returnProcCount) {
     FILE * configFp;
     char * currentLine = NULL;
     size_t len = 0;
+
+    struct SubProcess ** processes = (struct SubProcess **) malloc(sizeof(struct SubProcess *) * MAX_LINES_IN_FILE);
+    size_t processCounter = 0;
 
     configFp = fopen(configPathName, "r");
     if (configFp == NULL) {
@@ -49,9 +66,13 @@ struct SubProcess * readConfig(char * configPathName) {
     }
 
     while (getline(&currentLine, &len, configFp) != -1) {
-        processOneLine(currentLine, len);
+        struct SubProcess * subProcess = processOneLine(currentLine, len);
+
+        processes[processCounter] = subProcess;
+        processCounter++;
     }
 
-    return NULL;
+    *returnProcCount = processCounter;
+    return processes;
 }
 

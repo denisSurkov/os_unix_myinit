@@ -1,13 +1,13 @@
 #ifndef OS_UNIX_MYINIT_SUB_PROCESSES_H
 #define OS_UNIX_MYINIT_SUB_PROCESSES_H
 
+#include <stdlib.h>
+
 struct SubProcess {
     int pid;
 
-    char * fullConfigPath;
-
-    char * inPathName;
-    char * outPathName;
+    size_t paramsLength;
+    char ** configLineParams;
 };
 
 #endif //OS_UNIX_MYINIT_SUB_PROCESSES_H
