@@ -61,6 +61,7 @@ struct SubProcess ** readConfig(char * configPathName, size_t * returnProcCount)
 
     configFp = fopen(configPathName, "r");
     if (configFp == NULL) {
+        // todo: how to pass log?
         perror("error while opening config file");
         return NULL;
     }
