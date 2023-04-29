@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/resource.h>
 #include "config_reading.h"
 #include "sub_processes.h"
 
@@ -12,12 +13,40 @@ void handleSighup(int sig) {
     shouldRun = 0;
 }
 
+void initAsDaemon() {
+    struct rlimit flimit;
 
-int main(int argc, char * argv[]) {
-    size_t returnProcCount = 0;
+    if (getpid() != 1) {
+        signal(SIGTTOU, SIG_IGN);
+        signal(SIGTTIN, SIG_IGN);
+        signal(SIGTSTP, SIG_IGN);
+    }
+
+    if (fork() != 0) {
+        exit(0);
+    }
+
+    setsid();
+    getrlimit(RLIMIT_NOFILE, &flimit);
+    for (int fd = 0; fd <flimit.rlim_max; ++fd) {
+        close(fd);
+    }
+
+    chdir("/");
+
+    // открывает лог-файл в каталоге /tmp ?
+
+    fopen("/tmp/myinit.log", )
 
     signal(SIGHUP, handleSighup);
 
+}
+
+
+int main(int argc, char * argv[]) {
+    initAsDaemon();
+
+    size_t returnProcCount = 0;
     struct SubProcess ** processes = readConfig(argv[1], &returnProcCount);
 
     for (int i = 0; i < returnProcCount; ++i) {
