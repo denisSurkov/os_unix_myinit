@@ -14,15 +14,15 @@
     {                    \
         time_t __t;               \
         time(&__t);               \
-        fprintf(logfp, "%s\t|\t", strtok(ctime(&__t), "\n")); \
-        fprintf(logfp, format, __VA_ARGS__); \
-        fflush(logfp);       \
+        fprintf(logfile, "%s\t|\t", strtok(ctime(&__t), "\n")); \
+        fprintf(logfile, format, __VA_ARGS__); \
+        fflush(logfile);       \
     };
 
 
 int shouldRun = 1;
 
-FILE * logfp;
+FILE * logfile;
 
 void handleSighup(int sig) {
     printf("hello from sighup");
@@ -50,8 +50,8 @@ void initAsDaemon() {
 
     chdir("/");
 
-    logfp = fopen(LOG_PATH, "a");
-    if (logfp == NULL) {
+    logfile = fopen(LOG_PATH, "a");
+    if (logfile == NULL) {
         exit(-2);
     }
     log("%s\n", "started daemon");
@@ -119,6 +119,6 @@ int main(int argc, char * argv[]) {
         }
     }
 
-    fclose(logfp);
+    fclose(logfile);
     return 0;
 }
