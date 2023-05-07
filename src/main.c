@@ -2,83 +2,40 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include <sys/resource.h>
-#include <time.h>
 #include "config_reading.h"
 #include "string.h"
 #include "sub_processes.h"
-
-#define LOG_PATH "/tmp/myinit.log"
-
-#define log(format, ...) \
-    {                    \
-        time_t __t;               \
-        time(&__t);               \
-        fprintf(logfile, "%s\t|\t", strtok(ctime(&__t), "\n")); \
-        fprintf(logfile, format, __VA_ARGS__); \
-        fflush(logfile);       \
-    };
-
+#include "logger.h"
+#include "daemonization.h"
 
 int shouldRun = 1;
 
-FILE * logfile;
 
-void handleSighup(int sig) {
+void handleSighup(int _) {
     printf("hello from sighup");
     shouldRun = 0;
 }
 
-void initAsDaemon() {
-    struct rlimit flimit;
-
-    if (getpid() != 1) {
-        signal(SIGTTOU, SIG_IGN);
-        signal(SIGTTIN, SIG_IGN);
-        signal(SIGTSTP, SIG_IGN);
-    }
-
-    if (fork() != 0) {
-        exit(0);
-    }
-
-    setsid();
-    getrlimit(RLIMIT_NOFILE, &flimit);
-    for (int fd = 0; fd <flimit.rlim_max; ++fd) {
-        close(fd);
-    }
-
-    chdir("/");
-
-    logfile = fopen(LOG_PATH, "a");
-    if (logfile == NULL) {
-        exit(-2);
-    }
-    log("%s\n", "started daemon");
-
-    signal(SIGHUP, handleSighup);
-}
-
 
 int main(int argc, char * argv[]) {
-    initAsDaemon();
-
     if (argc != 2) {
         printf("usage: %s pathToConfiFile", argv[0]);
         exit(-1);
     }
 
+    makeItselfDaemon();
+    signal(SIGHUP, handleSighup);
 
     size_t returnProcCount = 0;
     struct SubProcess ** processes = readConfig(argv[1], &returnProcCount);
-    log("got %zu processes in %s file\n", returnProcCount, argv[1]);
+    writeLog("got %zu processes in %s file\n", returnProcCount, argv[1]);
 
     for (int i = 0; i < returnProcCount; ++i) {
         struct SubProcess * subProcess = processes[i];
         for (int j = 0; j < subProcess->paramsLength; ++j) {
-            log("got %s ", subProcess->configLineParams[j]);
+            writeLog("got %s ", subProcess->configLineParams[j]);
         }
-        log("%s\n", "")
+        writeLog("%s\n", "");
     }
 
     pid_t cpid;
@@ -90,15 +47,14 @@ int main(int argc, char * argv[]) {
         {
             case -1:
                 // failed
-                log("fork failed; cpid == %d", -1);
+                // todo: write errno st
+                writeLog("fork failed; cpid == %d", -1);
                 break;
             case 0:
-                // child
-                log("about to start %s\n", subProcess->configLineParams[0]);
+                writeLog("starting %s\n", subProcess->program);
 
-                // todo: open stdin, stdout
-                int res = execlp(subProcess->configLineParams[0], subProcess->configLineParams[0], subProcess->configLineParams[1], NULL);
-                exit(res);
+                closeAllFiles();
+                startSubProcess(subProcess);
             default:
                 // parent
                 subProcess->pid = cpid;
@@ -114,11 +70,13 @@ int main(int argc, char * argv[]) {
             if(processes[p]->pid==cpid)
             {
                 //делаем что-то по завершении дочернего процесса
-                log("child number %d pid %d finished\n", p, cpid)
+                writeLog("child number %d pid %d finished\n", p, cpid);
+
+                // todo: start again...
             }
         }
     }
 
-    fclose(logfile);
+    closeLog();
     return 0;
 }
