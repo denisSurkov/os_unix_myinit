@@ -1,80 +1,56 @@
 #include <stdio.h>
 #include <signal.h>
-#include <unistd.h>
-#include <sys/wait.h>
+#include <stdbool.h>
 #include "config_reading.h"
-#include "string.h"
 #include "sub_processes.h"
 #include "logger.h"
 #include "daemonization.h"
 
-int shouldRun = 1;
+struct DaemonState * globalState;
+bool daemonsWorking = true;
+
+const char * configFile;
 
 
-void handleSighup(int _) {
-    printf("hello from sighup");
-    shouldRun = 0;
+void handleConfigReload(int _) {
+    writeLog("got sighup signal, reloading config\n");
+
+    stopState(globalState);
+
+    writeLog("stopped previous daemon state\n");
+
+    globalState = initFromConfigFile(configFile);
+    startState(globalState);
+
+    writeLog("reloaded config and start new processes\n");
 }
 
 
-int main(int argc, char * argv[]) {
+void checkArguments(int argc, char * argv[]) {
     if (argc != 2) {
         printf("usage: %s pathToConfiFile", argv[0]);
         exit(-1);
     }
+}
 
-    makeItselfDaemon();
-    signal(SIGHUP, handleSighup);
 
-    size_t returnProcCount = 0;
-    struct SubProcess ** processes = readConfig(argv[1], &returnProcCount);
-    writeLog("got %zu processes in %s file\n", returnProcCount, argv[1]);
+void registerConfigReloadSignal() {
+    signal(SIGHUP, handleConfigReload);
+}
 
-    for (int i = 0; i < returnProcCount; ++i) {
-        struct SubProcess * subProcess = processes[i];
-        for (int j = 0; j < subProcess->paramsLength; ++j) {
-            writeLog("got %s ", subProcess->configLineParams[j]);
-        }
-        writeLog("%s\n", "");
-    }
 
-    pid_t cpid;
-    for (int i = 0; i < returnProcCount; ++i) {
-        struct SubProcess * subProcess = processes[i];
-        cpid = fork();
+int main(int argc, char * argv[]) {
+    checkArguments(argc, argv);
+    configFile = argv[1];
 
-        switch (cpid)
-        {
-            case -1:
-                // failed
-                // todo: write errno st
-                writeLog("fork failed; cpid == %d", -1);
-                break;
-            case 0:
-                writeLog("starting %s\n", subProcess->program);
+    makeThisProcessDaemon();
+    registerConfigReloadSignal();
 
-                closeAllFiles();
-                startSubProcess(subProcess);
-            default:
-                // parent
-                subProcess->pid = cpid;
-        }
+    globalState = initFromConfigFile(configFile);
+    startState(globalState);
 
-    }
-
-    while (shouldRun)
-    {
-        cpid=waitpid(-1, NULL, 0);   //ждем любого завершенного потомка
-        for (int p=0; p<returnProcCount; p++)
-        {
-            if(processes[p]->pid==cpid)
-            {
-                //делаем что-то по завершении дочернего процесса
-                writeLog("child number %d pid %d finished\n", p, cpid);
-
-                // todo: start again...
-            }
-        }
+    while (daemonsWorking) {
+        workUntilDeath(globalState);
     }
 
     closeLog();

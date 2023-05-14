@@ -1,6 +1,3 @@
-//
-// Created by denis on 07.05.23.
-//
 #include "stdio.h"
 
 #ifndef OS_UNIX_MYINIT_LOGGER_H

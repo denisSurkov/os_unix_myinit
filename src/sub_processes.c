@@ -1,10 +1,13 @@
-//
-// Created by denis on 25.04.23.
-//
-
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
+#include <string.h>
 #include "sub_processes.h"
+#include "logger.h"
+#include "utils.h"
+
+#define FORK_FAILED_PID (-1)
+#define FORK_CHILD 0
 
 
 void startSubProcess(struct SubProcess * subProcess) {
@@ -16,6 +19,27 @@ void startSubProcess(struct SubProcess * subProcess) {
 
     execvp(subProcess->program, subProcess->configLineParams);
 }
+
+
+void forkAndStartSubprocess(struct SubProcess * subProcess) {
+    pid_t pid = fork();
+
+    switch (pid)
+    {
+        case FORK_FAILED_PID:
+            writeLog("fork failed; pid == %d; error %s", -1, strerror(errno));
+            break;
+        case FORK_CHILD:
+            writeLog("starting %s\n", subProcess->program);
+
+            closeThisProcessAllFiles();
+            startSubProcess(subProcess);
+            break;
+        default:
+            subProcess->pid = pid;
+    }
+}
+
 
 void freeSubProcess(struct SubProcess * subProcess) {
     free(subProcess->stdinFilename);

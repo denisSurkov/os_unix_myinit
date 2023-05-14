@@ -15,7 +15,7 @@ struct SubProcess {
 };
 
 
-void startSubProcess(struct SubProcess *);
+void forkAndStartSubprocess(struct SubProcess *);
 
 void freeSubProcess(struct SubProcess *);
 

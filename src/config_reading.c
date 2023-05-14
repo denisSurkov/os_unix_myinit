@@ -51,9 +51,10 @@ struct SubProcess * processOneLine(char * line) {
     subProcess->configLineParams = lineArguments;
 
     return subProcess;
-};
+}
 
-struct SubProcess ** readConfig(char * configPathName, size_t * returnProcCount) {
+
+struct SubProcess ** readConfig(const char * configPathName, size_t * returnProcCount) {
     FILE * configFile;
     char * currentLine = NULL;
     size_t len = 0;

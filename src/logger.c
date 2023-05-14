@@ -9,6 +9,7 @@
 
 FILE * logfile = NULL;
 
+
 void initLog() {
     logfile = fopen(LOG_PATH, "a");
     if (logfile == NULL) {
