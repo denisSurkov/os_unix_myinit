@@ -5,10 +5,27 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #define LINE_DELIMITERS " \n"
 #define MAX_ARGUMENTS_IN_LINE 4096
 #define MAX_LINES_IN_FILE 1024
+
+bool validateIsAbsolutePath(const char * path) {
+    bool result = strlen(path) >= 1 && path[0] == '/';
+    if (result == false) {
+        writeLog("%s is not absolute path, cannot start subprocess", path);
+        return false;
+    }
+
+    return true;
+}
+
+void freeLine(char ** lineArgs, size_t totalArgs) {
+    for (int i = 0; i < totalArgs; ++i) {
+        free(lineArgs[i]);
+    }
+}
 
 
 struct SubProcess * processOneLine(char * line) {
@@ -30,15 +47,27 @@ struct SubProcess * processOneLine(char * line) {
     }
 
 
-    // todo: add checks for filenames
     char * program = lineArguments[0];
+    if (!validateIsAbsolutePath(program)) {
+        freeLine(lineArguments, totalArguments);
+        return NULL;
+    }
 
     totalArguments--;
     char * stdoutFilename = lineArguments[totalArguments];
+    if (!validateIsAbsolutePath(stdoutFilename)) {
+        freeLine(lineArguments, totalArguments);
+        return NULL;
+    }
     lineArguments[totalArguments] = NULL;
 
     totalArguments--;
     char * stdinFilename = lineArguments[totalArguments];
+    if (!validateIsAbsolutePath(stdinFilename)) {
+        freeLine(lineArguments, totalArguments);
+        return NULL;
+    }
+
     lineArguments[totalArguments] = NULL;
 
     struct SubProcess * subProcess =  malloc(sizeof(struct SubProcess));
@@ -64,7 +93,7 @@ struct SubProcess ** readConfig(const char * configPathName, size_t * returnProc
 
     configFile = fopen(configPathName, "r");
     if (configFile == NULL) {
-        writeLog("failed to open config file, error: %s\n", strerror(errno));
+        writeLog("failed to open config file, error: %s", strerror(errno));
         return NULL;
     }
 

@@ -26,6 +26,7 @@ void writeLog(const char * format, ...) {
     va_list arg_list;
     va_start(arg_list, format);
     vfprintf(logfile, format, arg_list);
+    vfprintf(logfile, "\n", NULL);
     va_end(arg_list);
 
     fflush(logfile);

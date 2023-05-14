@@ -13,16 +13,19 @@ const char * configFile;
 
 
 void handleConfigReload(int _) {
-    writeLog("got sighup signal, reloading config\n");
+    writeLog("got sighup signal, reloading config");
 
     stopState(globalState);
 
-    writeLog("stopped previous daemon state\n");
+    writeLog("stopped previous daemon state");
 
     globalState = initFromConfigFile(configFile);
+    if (globalState == NULL) {
+        exit(-2);
+    }
     startState(globalState);
 
-    writeLog("reloaded config and start new processes\n");
+    writeLog("reloaded config and start new processes");
 }
 
 
@@ -47,6 +50,9 @@ int main(int argc, char * argv[]) {
     registerConfigReloadSignal();
 
     globalState = initFromConfigFile(configFile);
+    if (globalState == NULL) {
+        exit(-2);
+    }
     startState(globalState);
 
     while (daemonsWorking) {

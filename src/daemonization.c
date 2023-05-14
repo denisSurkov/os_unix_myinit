@@ -29,14 +29,20 @@ void makeThisProcessDaemon() {
     chdir("/");
 
     initLog();
-    writeLog("started daemon\n");
+    writeLog("started daemon");
 }
 
 
 struct DaemonState * initFromConfigFile(const char * configFilename) {
     size_t returnProcCount = 0;
+
     struct SubProcess ** processes = readConfig(configFilename, &returnProcCount);
-    writeLog("got %zu processes in %s file\n", returnProcCount, configFilename);
+
+    if (processes == NULL) {
+        return NULL;
+    }
+
+    writeLog("got %zu processes in %s file", returnProcCount, configFilename);
 
     struct DaemonState * state = malloc(sizeof(struct DaemonState) * 1);
     state->processes = processes;

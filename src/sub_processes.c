@@ -30,7 +30,7 @@ void forkAndStartSubprocess(struct SubProcess * subProcess) {
             writeLog("fork failed; pid == %d; error %s", -1, strerror(errno));
             break;
         case FORK_CHILD:
-            writeLog("starting %s\n", subProcess->program);
+            writeLog("starting %s", subProcess->program);
 
             closeThisProcessAllFiles();
             startSubProcess(subProcess);
