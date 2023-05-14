@@ -11,8 +11,8 @@
 
 
 void startSubProcess(struct SubProcess * subProcess) {
-    int input_fd = open("input.txt", O_RDONLY);
-    int output_fd = open("output.txt", O_CREAT | O_WRONLY | O_TRUNC, 0666);
+    int input_fd = open(subProcess->stdinFilename, O_RDONLY);
+    int output_fd = open(subProcess->stdoutFilename, O_CREAT | O_WRONLY | O_TRUNC, 0666);
 
     dup2(input_fd, STDIN_FILENO);
     dup2(output_fd, STDOUT_FILENO);

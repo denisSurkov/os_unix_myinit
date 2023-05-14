@@ -78,7 +78,7 @@ void runWhileStateIsAlive(struct DaemonState * state) {
                 continue;
             }
 
-            writeLog("child number %d pid %d finished, starting again\n", i, pid);
+            writeLog("child number %d pid %d finished, starting again", i, pid);
             forkAndStartSubprocess(state->processes[i]);
         }
     }
