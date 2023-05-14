@@ -61,8 +61,17 @@ void startState(struct DaemonState * state) {
     }
 }
 
+void stopAllProcesses(struct DaemonState * state) {
+    for (int i = 0; i < state->processesCount; ++i) {
+        if (state->processes[i]->pid == -1) continue;
+
+        kill(state->processes[i]->pid, SIGKILL);
+    }
+}
+
 void stopState(struct DaemonState * state) {
     state->_isAlive = false;
+    stopAllProcesses(state);
 }
 
 
@@ -83,6 +92,7 @@ void runWhileStateIsAlive(struct DaemonState * state) {
         }
     }
 }
+
 
 
 void killItSelf(struct DaemonState * state) {

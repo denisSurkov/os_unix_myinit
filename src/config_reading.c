@@ -29,15 +29,17 @@ void freeLine(char ** lineArgs, size_t totalArgs) {
 
 
 struct SubProcess * processOneLine(char * line) {
-    char * lineArguments[MAX_ARGUMENTS_IN_LINE];
+    char ** lineArguments = malloc(sizeof(char *) * MAX_ARGUMENTS_IN_LINE);
     size_t totalArguments = 0;
 
     char * argument;
     argument = strtok(line, LINE_DELIMITERS);
 
     while (argument != NULL) {
-        lineArguments[totalArguments] = argument;
+        lineArguments[totalArguments] = malloc(sizeof(char) * (strlen(argument) + 1));
+        strcpy(lineArguments[totalArguments], argument);
         totalArguments++;
+
         argument = strtok(NULL, LINE_DELIMITERS);
     }
 
@@ -45,7 +47,6 @@ struct SubProcess * processOneLine(char * line) {
         writeLog("failed to parse line \"%s\", found %d arguments, minimum 3", line, totalArguments);
         return NULL;
     }
-
 
     char * program = lineArguments[0];
     if (!validateIsAbsolutePath(program)) {
@@ -75,7 +76,6 @@ struct SubProcess * processOneLine(char * line) {
     subProcess->program = program;
     subProcess->stdinFilename = stdinFilename;
     subProcess->stdoutFilename= stdoutFilename;
-
     subProcess->paramsLength = totalArguments;
     subProcess->configLineParams = lineArguments;
 
@@ -88,7 +88,7 @@ struct SubProcess ** readConfig(const char * configPathName, size_t * returnProc
     char * currentLine = NULL;
     size_t len = 0;
 
-    struct SubProcess ** processes = (struct SubProcess **) malloc(sizeof(struct SubProcess *) * MAX_LINES_IN_FILE);
+    struct SubProcess ** processes = malloc(sizeof(struct SubProcess *) * MAX_LINES_IN_FILE);
     size_t processCounter = 0;
 
     configFile = fopen(configPathName, "r");

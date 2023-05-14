@@ -37,8 +37,19 @@ void checkArguments(int argc, char * argv[]) {
 }
 
 
+void handleSigTerm(int _) {
+    writeLog("got sigterm signal");
+    stopState(globalState);
+    exit(0);
+}
+
+
 void registerConfigReloadSignal() {
     signal(SIGHUP, handleConfigReload);
+}
+
+void registerSigTermSignal() {
+    signal(SIGTERM, handleSigTerm);
 }
 
 
@@ -47,7 +58,9 @@ int main(int argc, char * argv[]) {
     configFile = argv[1];
 
     makeThisProcessDaemon();
+
     registerConfigReloadSignal();
+    registerSigTermSignal();
 
     globalState = initFromConfigFile(configFile);
     if (globalState == NULL) {
