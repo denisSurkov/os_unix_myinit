@@ -31,7 +31,7 @@ void handleConfigReload(int _) {
 
 void checkArguments(int argc, char * argv[]) {
     if (argc != 2) {
-        printf("usage: %s pathToConfiFile", argv[0]);
+        printf("usage: %s /path/to/config/\n", argv[0]);
         exit(-1);
     }
 }
